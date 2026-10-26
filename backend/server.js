@@ -731,6 +731,16 @@ app.get('/api/setup-admin', async (req, res) => {
         try { await db.query("ALTER TABLE billing ADD COLUMN total_billed DECIMAL(10, 2) NOT NULL DEFAULT 0.00"); } catch (e) {}
         try { await db.query("ALTER TABLE billing ADD COLUMN billing_status VARCHAR(50) NOT NULL DEFAULT 'unpaid'"); } catch (e) {}
 
+        // --- DATA FIX: Correct apparel deposit_fee to 10% of rent_price ---
+        try {
+            await db.query(`UPDATE apparel SET deposit_fee = ROUND(rent_price * 0.10, 2)`);
+        } catch (e) {}
+
+        // --- DATA FIX: Ensure billing total_billed equals rental_fee and deposit_fee is 10% ---
+        try {
+            await db.query(`UPDATE billing SET deposit_fee = ROUND(rental_fee * 0.10, 2), total_billed = rental_fee`);
+        } catch (e) {}
+
         await db.query(`
             CREATE TABLE IF NOT EXISTS join_requests (
                 id INT AUTO_INCREMENT PRIMARY KEY,
